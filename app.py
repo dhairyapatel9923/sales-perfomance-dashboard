@@ -1,5 +1,6 @@
 import streamlit as st
-import mysql.connector
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -360,15 +361,16 @@ ALLOWED_ROLES = (ROLE_OWNER, ROLE_ADMIN, ROLE_EMPLOYEE)
 
 
 def get_db_connection():
-    """Open a fresh MySQL connection using Streamlit secrets."""
-    cfg = st.secrets["mysql"]
-    return mysql.connector.connect(
+    """Open a fresh Supabase PostgreSQL connection using Streamlit secrets."""
+    cfg = st.secrets["postgres"]
+    return psycopg2.connect(
         host=cfg["host"],
-        port=int(cfg.get("port", 3306)),
+        port=int(cfg.get("port", 5432)),
         user=cfg["user"],
         password=cfg["password"],
-        database=cfg["database"],
-        connection_timeout=10,
+        dbname=cfg.get("database", "postgres"),
+        connect_timeout=10,
+        sslmode="require",
     )
 
 
@@ -396,13 +398,13 @@ def initialise_auth():
         cursor = connection.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS app_users (
-                user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                user_id BIGSERIAL PRIMARY KEY,
                 username VARCHAR(80) NOT NULL UNIQUE,
                 password_hash VARCHAR(255) NOT NULL,
-                role ENUM('OWNER','ADMIN','EMPLOYEE') NOT NULL,
-                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                role TEXT NOT NULL CHECK (role IN ('OWNER','ADMIN','EMPLOYEE')),
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB
+            )
         """)
         connection.commit()
         cursor.execute("SELECT COUNT(*) FROM app_users WHERE role = 'OWNER'")
@@ -414,7 +416,7 @@ def initialise_auth():
             if not bootstrap_username or len(bootstrap_password) < 12:
                 return (False, "No Owner account exists yet. Add [auth] owner_username and a strong owner_password (at least 12 characters) to .streamlit/secrets.toml, then restart the app. Do not share or commit this file.")
             cursor.execute(
-                "INSERT INTO app_users (username, password_hash, role, is_active) VALUES (%s, %s, 'OWNER', 1)",
+                "INSERT INTO app_users (username, password_hash, role, is_active) VALUES (%s, %s, 'OWNER', TRUE)",
                 (bootstrap_username, password_hash(bootstrap_password)),
             )
             connection.commit()
@@ -426,7 +428,7 @@ def initialise_auth():
 def authenticate(username, password):
     connection = get_db_connection()
     try:
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             "SELECT user_id, username, password_hash, role, is_active FROM app_users WHERE username = %s",
             (username.strip(),),
@@ -448,7 +450,7 @@ def require_role(*roles):
 try:
     auth_ready, auth_message = initialise_auth()
 except Exception as auth_error:
-    st.error("Authentication/database setup failed. Check the MySQL secrets and database permissions.")
+    st.error("Authentication/database setup failed. Check the Supabase PostgreSQL secrets and database permissions.")
     st.caption(str(auth_error))
     st.stop()
 
@@ -529,7 +531,7 @@ with refresh_col2:
 # PART 1 ENDS HERE
 # =========================================================
 # =========================================================
-# MYSQL CONNECTION
+# SUPABASE POSTGRESQL CONNECTION
 # =========================================================
 
 @st.cache_data(ttl=300)
@@ -1530,11 +1532,11 @@ if require_role(ROLE_OWNER):
                 connection = get_db_connection()
                 try:
                     cursor = connection.cursor()
-                    cursor.execute("INSERT INTO app_users (username, password_hash, role, is_active) VALUES (%s,%s,%s,1)",
+                    cursor.execute("INSERT INTO app_users (username, password_hash, role, is_active) VALUES (%s,%s,%s,TRUE)",
                                    (account_username.strip(), password_hash(account_password), account_role))
                     connection.commit()
                     st.success(f"Account created for {account_username.strip()} with role {account_role}.")
-                except mysql.connector.IntegrityError:
+                except psycopg2.IntegrityError:
                     connection.rollback()
                     st.error("That username already exists.")
                 except Exception as e:
@@ -1564,7 +1566,7 @@ if require_role(ROLE_OWNER):
                     try:
                         cursor = connection.cursor()
                         cursor.execute("UPDATE app_users SET role=%s, is_active=%s WHERE user_id=%s AND role <> 'OWNER'",
-                                       (new_role, 1 if desired_active == "Active" else 0, int(chosen_user_id)))
+                                       (new_role, desired_active == "Active", int(chosen_user_id)))
                         connection.commit()
                         st.success("Account updated.")
                         st.rerun()
@@ -1706,7 +1708,7 @@ st.markdown(
 <b>Sales Performance Dashboard</b><br><br>
 
 Developed using
-<b>Python • Streamlit • MySQL • Pandas • Plotly</b>
+<b>Python • Streamlit • PostgreSQL • Pandas • Plotly</b>
 
 <br><br>
 
