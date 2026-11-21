@@ -5,7 +5,6 @@ from psycopg2.extras import RealDictCursor
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-
 from datetime import datetime, date
 import hashlib
 import hmac
@@ -56,16 +55,26 @@ html, body, [class*="css"], .stApp{
 }
 
 /* Hide default Streamlit branding */
-#MainMenu, footer, header{
+#MainMenu, footer,{
     visibility:hidden;
 }
+/* Streamlit Header Visibility Fix */
+header[data-testid="stHeader"] {
+    background-color: #FFFFFF !important;
+    visibility: visible !important;
+}
 
+header[data-testid="stHeader"] * {
+    color: #172B4D !important;
+}
 /* Main heading */
-.main-title{
-    font-size:clamp(28px,3vw,38px);
-    font-weight:800;
-    line-height:1.2;
-    letter-spacing:-1.1px;
+.main-title {
+    font-size: clamp(24px, 2.5vw, 32px);
+    font-weight: 800;
+    line-height: 1.4;
+    letter-spacing: -0.5px;
+    padding-top: 8px;
+}
     color:#172B4D;
     margin-bottom:7px;
 }
