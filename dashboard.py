@@ -55,9 +55,10 @@ html, body, [class*="css"], .stApp{
 }
 
 /* Hide default Streamlit branding */
-#MainMenu, footer,{
-    visibility:hidden;
+#MainMenu, footer {
+    visibility: hidden;
 }
+
 /* Streamlit Header Visibility Fix */
 header[data-testid="stHeader"] {
     background-color: #FFFFFF !important;
@@ -67,6 +68,7 @@ header[data-testid="stHeader"] {
 header[data-testid="stHeader"] * {
     color: #172B4D !important;
 }
+
 /* Main heading */
 .main-title {
     font-size: clamp(24px, 2.5vw, 32px);
@@ -74,9 +76,8 @@ header[data-testid="stHeader"] * {
     line-height: 1.4;
     letter-spacing: -0.5px;
     padding-top: 8px;
-}
-    color:#172B4D;
-    margin-bottom:7px;
+    color: #172B4D;
+    margin-bottom: 7px;
 }
 
 .sub-title{
@@ -271,12 +272,20 @@ button[data-baseweb="tab"][aria-selected="true"]{
     border-bottom-color:var(--blue)!important;
 }
 
-/* Alerts and status */
-div[data-testid="stAlert"]{
-    background:#FFFFFF!important;
-    border:1px solid var(--border)!important;
-    border-radius:10px!important;
-    box-shadow:none!important;
+/* Alerts and status - consistent light theme */
+div[data-testid="stAlert"],
+div[data-testid="stAlert"] > div {
+    background-color: #FFFFFF !important;
+    color: #172B4D !important;
+    border: 1px solid #E5EAF1 !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+div[data-testid="stAlert"] p,
+div[data-testid="stAlert"] span,
+div[data-testid="stAlert"] [data-testid="stMarkdownContainer"] {
+    color: #172B4D !important;
 }
 
 /* Chart containers */
